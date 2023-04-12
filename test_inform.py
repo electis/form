@@ -1,8 +1,6 @@
 """pytest required"""
 import os
 
-from starlette.responses import RedirectResponse
-
 os.environ['ENVIRONMENT'] = 'test'
 os.environ['INFORM_TG_TOKEN'] = 'qwe'
 
@@ -12,6 +10,8 @@ from managers import Inform
 import settings
 
 client = TestClient(app)
+
+# TODO переделать
 
 
 def test_inform_auth():

@@ -7,13 +7,13 @@ from serializers import Client
 
 class Inform:
 
-    def __init__(self, data: dict, client: Client = None):
+    def __init__(self, data: dict, client: Client):
         self.data = data
         self.client = client
+        self.user = client.user
 
     @staticmethod
     async def send_tg(text, tg_id=None):
-        tg_id = tg_id or settings.INFORM_TG_ID
         url = f"https://api.telegram.org/bot{settings.INFORM_TG_TOKEN}/sendMessage" \
               f"?chat_id={tg_id}&parse_mode=Markdown&text={text}"
         async with httpx.AsyncClient() as client:
@@ -43,14 +43,16 @@ class Inform:
     async def inform(self):
         text = self.make_text()
 
-        if settings.INFORM_TG_TOKEN and self.client.telegram:
+        if settings.INFORM_TG_TOKEN and self.user.telegram:
             try:
-                await self.send_tg(text, self.client.telegram)
+                await self.send_tg(text, self.user.telegram)
             except Exception as exc:
                 print(exc)
+                await self.send_tg(exc, settings.INFORM_TG_ID)
 
-        if self.client.email:
+        if self.user.email:
             try:
-                await self.send_email(text, self.client.email)
+                await self.send_email(text, self.user.email)
             except Exception as exc:
                 print(exc)
+                await self.send_tg(exc, settings.INFORM_TG_ID)

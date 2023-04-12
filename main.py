@@ -1,6 +1,7 @@
 """Запускает сервер FastAPI"""
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from uvicorn import run
 from uvicorn.config import LOGGING_CONFIG
 
@@ -20,6 +21,8 @@ app.add_middleware(
 app.include_router(secret_router, dependencies=[Depends(auth)])
 app.include_router(clean_router)
 
+if settings.DEBUG:
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 if __name__ == "__main__":
     LOGGING_CONFIG["formatters"]["default"]["fmt"] = "%(asctime)s [%(name)s] %(levelprefix)s %(message)s"

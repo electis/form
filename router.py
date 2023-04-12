@@ -1,6 +1,6 @@
 from fastapi import APIRouter, BackgroundTasks, Request
 from starlette import status
-from starlette.responses import RedirectResponse
+from starlette.responses import RedirectResponse, Response
 
 from helpers import get_data_client, make_redirect_url, run_inform
 from serializers import BaseResult
@@ -13,6 +13,10 @@ clean_router = APIRouter()
 async def inform_post(request: Request, background_tasks: BackgroundTasks):
     """Отправка уведомления (для форм обратной связи с js)"""
     data, client = await get_data_client(request)
+    if not client.user:
+        return Response(status_code=status.HTTP_401_UNAUTHORIZED)
+    if client.captcha_result is False:
+        return Response(status_code=status.HTTP_406_NOT_ACCEPTABLE)
     await run_inform(data, client, background_tasks)
     return BaseResult(result='OK')
 
@@ -22,9 +26,8 @@ async def info_post(request: Request, background_tasks: BackgroundTasks):
     """
     Отправка уведомления (для форм обратной связи без js)
     <form method="POST" action="https://direct.electis.ru/info">
-    <input type="hidden" id="_telegram" name="_telegram" value="1234567" />
-    <input type="hidden" id="_email" name="_email" value="qwe@asd.ru" />
-    <input type="hidden" id="_redirect" name="_redirect" value="/contacts" />
+    <input type="hidden" name="_guid" value="1234567" />
+    <input type="hidden" name="_redirect" value="/contacts" />
     """
     data, client = await get_data_client(request)
     await run_inform(data, client, background_tasks)
