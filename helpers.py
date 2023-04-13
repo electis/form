@@ -9,7 +9,7 @@ from fastapi.security import OAuth2PasswordBearer
 import settings
 import managers
 from local.users import users
-from serializers import Client
+from serializers import Client, User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -53,7 +53,7 @@ async def get_data_client(request: Request):
     try:
         if (guid := data.pop('_guid')) and (user := users.get(str(uuid.UUID(hex=guid)))):
             # TODO user from db
-            client.user = user
+            client.user = User(**user)
             client.captcha_token = data.pop('_token', None)
             await check_captcha(client)
     except Exception as exc:
