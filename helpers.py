@@ -1,4 +1,5 @@
 import os
+import uuid
 from urllib.parse import parse_qs
 
 import httpx
@@ -24,14 +25,14 @@ async def auth(token: str = Depends(oauth2_scheme)):
     )
 
 
-async def check_captcha(client):
+async def check_captcha(client, bad_score=0.5):
     if client.user.captcha_required:
         if client.captcha_token:
             url = 'https://www.google.com/recaptcha/api/siteverify'
             async with httpx.AsyncClient() as c:
                 response = await c.post(url, data=dict(secret=client.user.captcha_secret_key,
                                                        response=client.captcha_token, remoteip=client.ip))
-                if response.json().get('score', 0) <= 0.5:
+                if response.json().get('score', 0) <= bad_score:
                     client.captcha_result = False
                 else:
                     client.captcha_result = True
@@ -47,12 +48,17 @@ async def get_data_client(request: Request):
         ip=request.client.host,
         origin=request.headers.get('origin', ''),
         redirect=data.pop('_redirect', ''),
+        captcha_result=False,
     )
-    if (guid := data.pop('_guid')) and (user := users.get(guid)):
-        client.captcha_token = data.pop('_token', None)
-        # TODO user from db
-        client.user = user
-        await check_captcha(client)
+    try:
+        if (guid := data.pop('_guid')) and (user := users.get(str(uuid.UUID(hex=guid)))):
+            # TODO user from db
+            client.user = user
+            client.captcha_token = data.pop('_token', None)
+            await check_captcha(client)
+    except Exception as exc:
+        print(exc)
+        await managers.Inform.send_tg(exc, settings.INFORM_TG_ID)
     return data, client
 
 
@@ -76,6 +82,7 @@ async def run_inform(data: dict, client: Client, background_tasks):
         await inform_post(data, client)
     else:
         background_tasks.add_task(inform_post, data, client)
+
 
 def parse_body(body):
     return {key: value[0] for key, value in parse_qs(body.decode()).items()}
