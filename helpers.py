@@ -53,7 +53,7 @@ async def get_data_client(request: Request):
     try:
         if (guid := data.pop('_guid')) and (user := users.get(str(uuid.UUID(hex=guid)))):
             # TODO user from db
-            client.user = User(**user)
+            client.user = User(guid=guid, **user)
             client.captcha_token = data.pop('_token', None)
             await check_captcha(client)
     except Exception as exc:
