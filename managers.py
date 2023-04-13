@@ -14,11 +14,10 @@ class Inform:
 
     @staticmethod
     async def send_tg(text, tg_id=None):
-        url = f"https://api.telegram.org/bot{settings.INFORM_TG_TOKEN}/sendMessage" \
-              f"?chat_id={tg_id}&parse_mode=Markdown&text={text}"
         async with httpx.AsyncClient() as client:
-            response = await client.get(url)
-            return response.text
+            response = await client.get(f"https://api.telegram.org/bot{settings.INFORM_TG_TOKEN}/sendMessage",
+                                        params=dict(chat_id=tg_id, text=text))
+            assert response.status_code == 200, f'Error sendMessage {response.status_code} {response.text}'
 
     @staticmethod
     async def send_email(text, email):

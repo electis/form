@@ -50,6 +50,7 @@ async def get_data_client(request: Request):
         redirect=data.pop('_redirect', ''),
         captcha_result=False,
     )
+    data.pop('_recaptcha', None),
     try:
         if (guid := data.pop('_guid')) and (user := users.get(str(uuid.UUID(hex=guid)))):
             # TODO user from db
