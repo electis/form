@@ -24,7 +24,7 @@ class Client(BaseModel):
     captcha_result: Optional[bool]
     captcha_token: Optional[str]
     redirect: Optional[str]
-    user = User
+    user: Optional[User]
 
     guid: Optional[str]
     telegram: Optional[str]

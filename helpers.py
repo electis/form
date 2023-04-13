@@ -9,7 +9,7 @@ from fastapi.security import OAuth2PasswordBearer
 import settings
 import managers
 from local.users import users
-from serializers import Client, User
+from serializers import Client
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
