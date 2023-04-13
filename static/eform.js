@@ -12,14 +12,14 @@ ready(function () {
         el.onsubmit = function (event) {
             event.preventDefault();
             let loader = document.createElement("img")
-            loader.src = "http://127.0.0.1:9000/static/loader.gif";
+            loader.src = "https://electis.ru/static/loader.gif";
             el.submit.after(loader);
             let data = Object.fromEntries(new FormData(el));
             grecaptcha.ready(function () {
                 grecaptcha.execute(data['_recaptcha'], {action: 'submit'}).then(
                     async function (token) {
                         data['_token'] = token;
-                        await fetch('http://127.0.0.1:9000/inform', {
+                        await fetch('https://direct.electis.ru/inform', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
