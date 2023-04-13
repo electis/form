@@ -23,7 +23,7 @@ ready(function () {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'Authorization': 'Bearer very_secret_token'
+                                'Authorization': 'Bearer uKkcYq5v3h'
                             },
                             body: JSON.stringify(data),
                         }).then((response) => {
