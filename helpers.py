@@ -9,6 +9,7 @@ from fastapi.security import OAuth2PasswordBearer
 import settings
 import managers
 from local.users import users
+from models import Users
 from serializers import Client, User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -42,8 +43,11 @@ async def check_captcha(client, bad_score=0.5):
         client.captcha_result = None
 
 
-async def get_data_client(request: Request):
-    data = await request.json()
+async def get_data_client(request: Request, as_json=True):
+    if as_json:
+        data = await request.json()
+    else:
+        data = parse_body(await request.body())
     client = Client(
         ip=request.client.host,
         origin=request.headers.get('origin', ''),
@@ -52,11 +56,11 @@ async def get_data_client(request: Request):
     )
     data.pop('_recaptcha', None),
     try:
-        if (guid := data.pop('_guid')) and (user := users.get(str(uuid.UUID(hex=guid)))):
-            # TODO user from db
-            client.user = User(guid=guid, **user)
-            client.captcha_token = data.pop('_token', None)
-            await check_captcha(client)
+        if guid := data.pop('_guid'):
+            if user := await User.from_queryset_single(Users.get(guid=uuid.UUID(hex=guid))):
+                client.user = user
+                client.captcha_token = data.pop('_token', None)
+                await check_captcha(client)
     except Exception as exc:
         print(exc)
         await managers.Inform.send_tg(exc, settings.INFORM_TG_ID)

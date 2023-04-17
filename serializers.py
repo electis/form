@@ -1,21 +1,16 @@
 from typing import Optional
 
 from pydantic import BaseModel
+from tortoise.contrib.pydantic import pydantic_model_creator
+
+from models import Users
+
+User = pydantic_model_creator(Users, name="User")
 
 
 class BaseResult(BaseModel):
     """Основной ответ сервиса"""
     result: Optional[str]
-
-
-class User(BaseModel):
-    guid: str
-    # tg_bot: Optional[str]
-    telegram: Optional[int]
-    email: Optional[str]
-    captcha_required: Optional[bool]
-    captcha_key: Optional[str]
-    captcha_secret_key: Optional[str]
 
 
 class Client(BaseModel):

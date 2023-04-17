@@ -2,6 +2,7 @@
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from tortoise.contrib.fastapi import register_tortoise
 from uvicorn import run
 from uvicorn.config import LOGGING_CONFIG
 
@@ -23,6 +24,14 @@ app.include_router(clean_router)
 
 if settings.DEBUG:
     app.mount("/static", StaticFiles(directory="static"), name="static")
+
+register_tortoise(
+    app,
+    db_url="sqlite://:memory:",
+    modules={"models": ["models"]},
+    generate_schemas=True,
+    add_exception_handlers=True,
+)
 
 if __name__ == "__main__":
     LOGGING_CONFIG["formatters"]["default"]["fmt"] = "%(asctime)s [%(name)s] %(levelprefix)s %(message)s"

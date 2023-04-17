@@ -30,3 +30,5 @@ MAIL_CONFIG = ConnectionConfig(
     MAIL_STARTTLS=False,
     MAIL_SSL_TLS=True,
 )
+
+# TODO db conf
