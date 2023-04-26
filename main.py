@@ -25,16 +25,21 @@ app.include_router(clean_router)
 if settings.DEBUG:
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-register_tortoise(
-    app,
-    db_url="sqlite://:memory:",
-    modules={"models": ["models"]},
-    generate_schemas=True,
-    add_exception_handlers=True,
-)
+# register_tortoise(
+#     app,
+#     db_url=settings.DB_URL,
+#     modules={"models": ["models"]},
+#     generate_schemas=False,
+#     add_exception_handlers=False,
+# )
 
-if __name__ == "__main__":
+@app.on_event("startup")
+async def startup_event():
     LOGGING_CONFIG["formatters"]["default"]["fmt"] = "%(asctime)s [%(name)s] %(levelprefix)s %(message)s"
     LOGGING_CONFIG["formatters"]["access"]["fmt"] = \
         '%(asctime)s [%(name)s] %(levelprefix)s %(client_addr)s - "%(request_line)s" %(status_code)s'
+    register_tortoise(app, config=settings.TORTOISE_ORM, generate_schemas=False)
+
+
+if __name__ == "__main__":
     run(app, host=settings.HOST, port=settings.PORT)

@@ -17,6 +17,8 @@ if ENVIRONMENT == 'production':
     assert SECRET_TOKEN != 'very_secret_token', 'Token not secure'
     DEBUG = False
 
+DB_URL = os.getenv('DB_URL')
+
 INFORM_TG_TOKEN = os.getenv('INFORM_TG_TOKEN')
 INFORM_TG_ID = os.getenv('INFORM_TG_ID')
 
@@ -31,4 +33,16 @@ MAIL_CONFIG = ConnectionConfig(
     MAIL_SSL_TLS=True,
 )
 
-# TODO db conf
+TORTOISE_ORM = {
+    "connections": {
+        "default": DB_URL,
+    },
+    "apps": {
+        "default": {
+            "models": [
+                "models", "aerich.models",
+            ],
+            "default_connection": "default",
+        },
+    }
+}
