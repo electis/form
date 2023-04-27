@@ -1,6 +1,6 @@
 import logging
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, Bot
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, ConversationHandler, \
     MessageHandler, filters
 
@@ -12,6 +12,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 MAIN, SITES, SITE, TYPING_REPLY, TYPING_CHOICE = range(5)
+SAVE, BACK = 'save', 'back'
 
 main_keyboard = [
     ["Аккаунт", "Сайты"],
@@ -29,16 +30,23 @@ site_keyboard = (
     ("captcha_secret_key", "Секретный ключ капчи"),
     ("description", "Описание сайта"),
 )
-inline_keyboard = lambda x: InlineKeyboardMarkup([[InlineKeyboardButton(a[1], callback_data=a[0])] for a in x])
 
-# _site_keyboard = inline_keyboard(site_keyboard) + [
-#         InlineKeyboardButton("Тест 1", callback_data='1'),
-#         InlineKeyboardButton("Тест 2", callback_data='2'),
-#     ]
+
+def make_site_keyboard(data: dict = None) -> InlineKeyboardMarkup:
+    data = data or dict()
+    keyboard = list()
+    for col in site_keyboard:
+        keyboard.append([
+            InlineKeyboardButton(col[1], callback_data=col[0]),
+            InlineKeyboardButton(data.get(col[0], '---'), callback_data=col[0])
+        ])
+    keyboard.append([InlineKeyboardButton('Сохранить', callback_data=SAVE)])
+    keyboard.append([InlineKeyboardButton('Отмена', callback_data=BACK)])
+    return InlineKeyboardMarkup(keyboard)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await update.message.reply_text(
+    await update.effective_user.send_message(
         "Привет! Это бот для управления аккаунтом обработчика HTML-форм сервиса form.electis.ru\n"
         "Выберите пункт меню",
         reply_markup=ReplyKeyboardMarkup(main_keyboard, one_time_keyboard=True),
@@ -64,7 +72,8 @@ async def main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     text = update.message.text
     context.user_data["choice"] = text
     if text == 'Сайты':
-        await update.message.reply_text(text, reply_markup=ReplyKeyboardMarkup(sites_keyboard, one_time_keyboard=True))
+        reply_text = 'Ваши сайты:\n...'
+        await update.message.reply_text(reply_text, reply_markup=ReplyKeyboardMarkup(sites_keyboard, one_time_keyboard=True))
         return SITES
     await update.message.reply_text(f"Your {text.lower()}? Yes, I would love to hear about that!")
     return TYPING_REPLY
@@ -74,12 +83,10 @@ async def sites_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     text = update.message.text
     context.user_data["choice"] = text
     if text == 'Добавить сайт':
-        await update.message.reply_text(text, reply_markup=inline_keyboard(site_keyboard))
+        menu = await update.message.reply_text(text, reply_markup=make_site_keyboard())
+        context.user_data["menu"] = menu.message_id
         return SITE
-
-    await update.message.reply_text(f"Your {text.lower()}? Yes, I would love to hear about that!")
-    return TYPING_REPLY
-
+    return await start(update, context)
 
 
 async def site_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -89,8 +96,19 @@ async def site_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     context.user_data["choice"] = variant
 
-    await query.edit_message_text(text=f"Введите {dict(site_keyboard)[variant]}")
+    if variant == SAVE:
+        ...
+        return SITES
+    elif variant == BACK:
+        ...
+        chat_id = context._chat_id
+        await context.bot.deleteMessage(message_id=context.user_data["menu"], chat_id=chat_id)
+        reply_text = 'Ваши сайты:\n...'
+        await update.effective_user.send_message(
+            reply_text, reply_markup=ReplyKeyboardMarkup(sites_keyboard, one_time_keyboard=True))
+        return SITES
 
+    await query.edit_message_text(text=f"Введите {dict(site_keyboard)[variant]}")
     return TYPING_REPLY
 
 
@@ -101,10 +119,7 @@ async def received_information(update: Update, context: ContextTypes.DEFAULT_TYP
     user_data[category] = text
     del user_data["choice"]
 
-    await update.message.reply_text(
-        f"{user_data}",
-        reply_markup=inline_keyboard(site_keyboard),
-    )
+    await update.message.reply_text(text, reply_markup=make_site_keyboard(user_data))
     return SITE
 
 
@@ -115,23 +130,31 @@ if __name__ == "__main__":
     site = '|'.join([a[0] for a in site_keyboard])
 
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[
+            CommandHandler("start", start),
+            MessageHandler(filters.Regex(""), start),
+            CallbackQueryHandler(start),
+        ],
         states={
             MAIN: [
                 MessageHandler(filters.Regex(f"^({regex_from_2d(main_keyboard)})$"), main_menu),
-                # MessageHandler(filters.Regex("^Something else...$"), custom_choice),
+                CommandHandler("start", start),
             ],
             SITES: [
                 MessageHandler(filters.Regex(f"^({regex_from_2d(sites_keyboard)})$"), sites_menu),
+                CommandHandler("start", start),
             ],
             SITE: [
                 CallbackQueryHandler(site_menu),
+                CommandHandler("start", start),
             ],
             TYPING_CHOICE: [
-                MessageHandler(filters.TEXT & ~(filters.COMMAND | filters.Regex("^Done$")), main_menu)
+                MessageHandler(filters.TEXT & ~(filters.COMMAND | filters.Regex("^Done$")), main_menu),
+                CommandHandler("start", start),
             ],
             TYPING_REPLY: [
-                MessageHandler(filters.TEXT & ~(filters.COMMAND | filters.Regex("^Done$")), received_information)
+                MessageHandler(filters.TEXT & ~(filters.COMMAND | filters.Regex("^Done$")), received_information),
+                CommandHandler("start", start),
             ],
         },
         fallbacks=[CommandHandler("stop", done)],
