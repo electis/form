@@ -1,11 +1,12 @@
 import pytest
 from asgi_lifespan import LifespanManager
 from httpx import AsyncClient
+from tortoise import Tortoise
 
 import settings
 from main import app
 from managers import Inform
-from models import Users
+from models import Sites, Users
 
 
 @pytest.fixture(scope="module")
@@ -22,6 +23,7 @@ async def client():
 
 @pytest.mark.anyio
 async def test_info(client: AsyncClient):
+    await Tortoise.generate_schemas()
     user_obj = await Users.create(email='test@mail.com', telegram=123)
 
     data = dict(_guid=user_obj.guid.hex, _redirect='http://test')
@@ -42,9 +44,11 @@ async def test_info(client: AsyncClient):
 
 @pytest.mark.anyio
 async def test_inform(client: AsyncClient):
+    await Tortoise.generate_schemas()
     user_obj = await Users.create(email='test@mail.com', telegram=123)
+    site_obj = await Sites.create(user=user_obj, domain='site.ru')
 
-    data = dict(_guid=user_obj.guid.hex, _redirect='http://test')
+    data = dict(_guid=site_obj.guid.hex)
     headers = dict(Authorization=f"Bearer {settings.SECRET_TOKEN}")
 
     async def send_tg(self, text, tg_id=None):

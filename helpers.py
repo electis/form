@@ -9,8 +9,8 @@ from fastapi.security import OAuth2PasswordBearer
 import settings
 import managers
 from local.users import users
-from models import Users
-from serializers import Client, User
+from models import Sites, Users
+from serializers import Client, Site, User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -27,7 +27,7 @@ async def auth(token: str = Depends(oauth2_scheme)):
 
 
 async def check_captcha(client, bad_score=0.5):
-    if client.user.captcha_required:
+    if client.site.captcha_required:
         if client.captcha_token:
             url = 'https://www.google.com/recaptcha/api/siteverify'
             async with httpx.AsyncClient() as c:
@@ -53,17 +53,20 @@ async def get_data_client(request: Request, as_json=True):
         origin=request.headers.get('origin', ''),
         redirect=data.pop('_redirect', ''),
         captcha_result=False,
+        guid=uuid.UUID(hex=data.pop('_guid')),
     )
-    data.pop('_recaptcha', None),
-    try:
-        if guid := data.pop('_guid'):
-            if user := await User.from_queryset_single(Users.get(guid=uuid.UUID(hex=guid))):
-                client.user = user
-                client.captcha_token = data.pop('_token', None)
+    # data.pop('_recaptcha', None),
+    if client.guid:
+        # client.site = await Site.from_queryset_single(Sites.get_or_none(guid=client.guid).select_related('user'))
+        # client.site = Sites.get_or_none(guid=client.guid).select_related('user')
+        client.site = await Sites.filter(guid=client.guid).select_related('user').first()
+        if client.site:
+            client.captcha_token = data.pop('_token', None)
+            try:
                 await check_captcha(client)
-    except Exception as exc:
-        print(exc)
-        await managers.Inform.send_tg(exc, settings.INFORM_TG_ID)
+            except Exception as exc:
+                print(exc)
+                await managers.Inform.send_tg(exc, settings.INFORM_TG_ID)
     return data, client
 
 

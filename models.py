@@ -17,11 +17,11 @@ class Users(models.Model):
 
 class Sites(models.Model):
     guid = fields.UUIDField(pk=True)
-    user = fields.ForeignKeyField('Users', related_name='sites')
+    user = fields.ForeignKeyField('default.Users', related_name='sites')
+    domain = fields.CharField(max_length=255)
     description = fields.TextField(default='')
     email = fields.CharField(max_length=320, default='')
-    domain = fields.CharField(max_length=255)
-    redirect = fields.CharField(max_length=255)
+    redirect = fields.CharField(max_length=255, default='')
     captcha_required = fields.BooleanField(default=False)
     captcha_key = fields.CharField(max_length=40, default='')
     captcha_secret_key = fields.CharField(max_length=40, default='')

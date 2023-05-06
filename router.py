@@ -13,7 +13,7 @@ clean_router = APIRouter()
 async def inform_post(request: Request, background_tasks: BackgroundTasks):
     """Отправка уведомления (для форм обратной связи с js)"""
     data, client = await get_data_client(request)
-    if not client.user:
+    if not client.site:
         return Response(status_code=status.HTTP_401_UNAUTHORIZED)
     if client.captcha_result is False:
         return Response(status_code=status.HTTP_406_NOT_ACCEPTABLE)

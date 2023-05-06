@@ -10,7 +10,7 @@ class Inform:
     def __init__(self, data: dict, client: Client):
         self.data = data
         self.client = client
-        self.user = client.user
+        self.site = client.site
 
     @staticmethod
     async def send_tg(text, tg_id=None):
@@ -42,16 +42,16 @@ class Inform:
     async def inform(self):
         text = self.make_text()
 
-        if settings.INFORM_TG_TOKEN and self.user.telegram:
+        if settings.INFORM_TG_TOKEN and self.site.user.telegram:
             try:
-                await self.send_tg(text, self.user.telegram)
+                await self.send_tg(text, self.site.user.telegram)
             except Exception as exc:
                 print(exc)
                 await self.send_tg(exc, settings.INFORM_TG_ID)
 
-        if self.user.email:
+        if self.site.user.email or self.site.email:
             try:
-                await self.send_email(text, self.user.email)
+                await self.send_email(text, self.site.email or self.site.user.email)
             except Exception as exc:
                 print(exc)
                 await self.send_tg(exc, settings.INFORM_TG_ID)
