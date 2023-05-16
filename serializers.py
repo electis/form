@@ -20,7 +20,7 @@ class Client(BaseModel):
     origin: Optional[str]
     captcha_result: Optional[bool]
     captcha_token: Optional[str]
-    redirect: Optional[str]
+    # redirect: Optional[str]
     site: Optional[Site]
 
     guid: UUID

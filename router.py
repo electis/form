@@ -27,9 +27,7 @@ async def info_post(request: Request, background_tasks: BackgroundTasks):
     Отправка уведомления (для форм обратной связи без js)
     <form method="POST" action="https://direct.electis.ru/info">
     <input type="hidden" name="_guid" value="1234567" />
-    <input type="hidden" name="_redirect" value="/contacts" />
     """
-    # TODO
     data, client = await get_data_client(request, as_json=False)
     await run_inform(data, client, background_tasks)
     redirect_url = make_redirect_url(client)

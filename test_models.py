@@ -25,8 +25,9 @@ async def client():
 async def test_info(client: AsyncClient):
     await Tortoise.generate_schemas()
     user_obj = await Users.create(email='test@mail.com', telegram=123)
+    site_obj = await Sites.create(user=user_obj, domain='http://site.ru', redirect='/sended')
 
-    data = dict(_guid=user_obj.guid.hex, _redirect='http://test')
+    data = dict(_guid=site_obj.guid.hex)
 
     async def send_tg(self, text, tg_id=None):
         assert tg_id == user_obj.telegram
@@ -39,7 +40,7 @@ async def test_info(client: AsyncClient):
 
     response = await client.post("/info", data=data)
     assert response.status_code == 303
-    assert response.headers.get('location') == data['_redirect']
+    assert response.headers.get('location') == site_obj.domain + site_obj.redirect
 
 
 @pytest.mark.anyio

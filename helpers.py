@@ -51,7 +51,7 @@ async def get_data_client(request: Request, as_json=True):
     client = Client(
         ip=request.client.host,
         origin=request.headers.get('origin', ''),
-        redirect=data.pop('_redirect', ''),
+        # redirect=data.pop('_redirect', ''),
         captcha_result=False,
         guid=uuid.UUID(hex=data.pop('_guid')),
     )
@@ -71,11 +71,11 @@ async def get_data_client(request: Request, as_json=True):
 
 
 def make_redirect_url(client: Client):
-    redirect_url = client.redirect
+    redirect_url = client.site.redirect
     if not redirect_url.startswith('http'):
-        if redirect_url.startswith('/'):
-            redirect_url = redirect_url[1:]
-        redirect_url = os.path.join(client.origin, redirect_url)
+        if not redirect_url.startswith('/'):
+            redirect_url = f"/{redirect_url}"
+        redirect_url = client.site.domain + redirect_url
     return redirect_url
 
 
