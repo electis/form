@@ -25,13 +25,6 @@ app.include_router(clean_router)
 if settings.DEBUG:
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# register_tortoise(
-#     app,
-#     db_url=settings.DB_URL,
-#     modules={"models": ["models"]},
-#     generate_schemas=False,
-#     add_exception_handlers=False,
-# )
 
 @app.on_event("startup")
 async def startup_event():
