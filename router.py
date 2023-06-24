@@ -29,6 +29,11 @@ async def info_post(request: Request, background_tasks: BackgroundTasks):
     <input type="hidden" name="_guid" value="1234567" />
     """
     data, client = await get_data_client(request, as_json=False)
+    # TODO redirects?
+    if not client.site:
+        return Response(status_code=status.HTTP_401_UNAUTHORIZED)
+    if client.captcha_result is False:
+        return Response(status_code=status.HTTP_406_NOT_ACCEPTABLE)
     await run_inform(data, client, background_tasks)
     redirect_url = make_redirect_url(client)
     print(f"Redirect to {redirect_url}")
