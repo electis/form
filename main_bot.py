@@ -22,7 +22,7 @@ sites_keyboard = [
     ["Добавить сайт", "Назад"]
 ]
 site_keyboard = (
-    ("domain", "Домен"),
+    ("domain", "Домен (Обязательно)"),
     ("email", "Почта для уведомлений"),
     ("redirect", "Ссылка редиректа"),
     ("captcha_required", "Проверка капчи"),
@@ -82,9 +82,10 @@ async def main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def sites_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     text = update.message.text
     context.user_data["choice"] = text
-    if text == 'Добавить сайт':
+    if text == sites_keyboard[0][0]:
         menu = await update.message.reply_text(text, reply_markup=make_site_keyboard())
-        context.user_data["menu"] = menu.message_id
+        context.user_data["menu_msg"] = menu.message_id
+        context.user_data["menu_text"] = menu.text
         return SITE
     return await start(update, context)
 
@@ -119,7 +120,7 @@ async def received_information(update: Update, context: ContextTypes.DEFAULT_TYP
     user_data[category] = text
     del user_data["choice"]
 
-    await update.message.reply_text(text, reply_markup=make_site_keyboard(user_data))
+    await update.message.reply_text(user_data.get('menu_text') or text, reply_markup=make_site_keyboard(user_data))
     return SITE
 
 

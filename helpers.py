@@ -1,4 +1,3 @@
-import os
 import uuid
 from urllib.parse import parse_qs
 
@@ -6,11 +5,10 @@ import httpx
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 
-import settings
 import managers
-from local.users import users
-from models import Sites, Users
-from serializers import Client, Site, User
+import settings
+from models import Sites
+from serializers import Client
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -57,8 +55,6 @@ async def get_data_client(request: Request, as_json=True):
     )
     # data.pop('_recaptcha', None),
     if client.guid:
-        # client.site = await Site.from_queryset_single(Sites.get_or_none(guid=client.guid).select_related('user'))
-        # client.site = Sites.get_or_none(guid=client.guid).select_related('user')
         client.site = await Sites.filter(guid=client.guid).select_related('user').first()
         if client.site:
             client.captcha_token = data.pop('_token', None)
@@ -70,12 +66,26 @@ async def get_data_client(request: Request, as_json=True):
     return data, client
 
 
+def fix_slash(url: str, begin=None, end=None):
+    if end:
+        if not url.endswith('/'):
+            url = f"{url}/"
+    elif end is False:
+        if url.endswith('/'):
+            url = url[:-1]
+    if begin:
+        if not url.startswith('/'):
+            url = f"/{url}"
+    elif begin is False:
+        if url.startswith('/'):
+            url = url[1:]
+    return url
+
+
 def make_redirect_url(client: Client):
     redirect_url = client.site.redirect
     if not redirect_url.startswith('http'):
-        if not redirect_url.startswith('/'):
-            redirect_url = f"/{redirect_url}"
-        redirect_url = client.site.domain + redirect_url
+        redirect_url = fix_slash(client.site.domain, end=False) + fix_slash(redirect_url, begin=True)
     return redirect_url
 
 
